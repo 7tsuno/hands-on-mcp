@@ -1,0 +1,41 @@
+{
+  "name": "hands-on-mcp",
+  "version": "1.0.0",
+  "description": "TypeScript CLI tool for MCP",
+  "main": "dist/index.js",
+  "bin": {
+    "hands-on-mcp": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsx src/index.ts",
+    "clean": "rm -rf dist",
+    "path": "echo $(pwd)/dist/index.js"
+  },
+  "files": [
+    "dist/**/*",
+    "README.md"
+  ],
+  "repository": "https://github.com/7tsuno/hands-on-mcp",
+  "author": "7tsuno <natsumeg.music@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.13.0",
+    "commander": "^11.1.0",
+    "zod": "^3.25.67"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsup": "^8.0.0",
+    "tsx": "^4.6.0",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "keywords": [
+    "cli",
+    "typescript",
+    "mcp"
+  ]
+}
