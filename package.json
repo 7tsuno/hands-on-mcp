@@ -21,6 +21,7 @@
   "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.13.0",
+    "@slack/web-api": "^7.9.3",
     "commander": "^11.1.0",
     "zod": "^3.25.67"
   },

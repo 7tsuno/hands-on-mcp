@@ -111,7 +111,7 @@ server.registerTool(
 
 ---
 
-#### ④ サーバーを起動する
+#### ④ サーバーの起動処理を実装する
 
 ```ts
 async function main() {
@@ -135,7 +135,7 @@ main().catch((err) => {
 
 ### 🧪 動作確認（REPL）
 
-ターミナルで `node build/index.js` を実行して、以下の JSON を直接貼り付けることで確認できます。
+ターミナルで `npm run dev` を実行して、以下の JSON を直接貼り付けることで確認できます。
 
 #### 🔍 利用可能なツール一覧を取得
 
@@ -170,8 +170,10 @@ npm run path
 #### 3. Claude Code に登録
 
 ```bash
-claude mcp add step1 -- {↑で取得したパス}
+claude mcp add step1  -s project  {↑で取得したパス}
 ```
+
+プロジェクトルートに `.mcp.json` が作成されるのが確認できます。
 
 ※ `npm link` などでコマンドをグローバルに登録するとフルパスを指定しなくてもできそうですが、なんかツールが呼ぶシェルの PATH の関係？でうまくいかなかったのでフルパス指定を推奨します。
 
