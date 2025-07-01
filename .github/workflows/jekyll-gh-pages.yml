@@ -35,7 +35,7 @@ jobs:
       - name: Build
         run: npm run claat:export
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v1
+        uses: actions/upload-pages-artifact@v3  # v1からv3へアップデート
         with:
           path: docs/html/hands-on-mcp
 
