@@ -1,0 +1,26 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2025-07-02T00:07:59+09:00",
+  "id": "hands-on-mcp",
+  "duration": 61,
+  "title": "MCP Server ハンズオン",
+  "summary": "TypeScript で MCP サーバーを作るハンズオン",
+  "source": "../hands-on.md",
+  "theme": "",
+  "status": [
+    "published"
+  ],
+  "category": [
+    "mcp",
+    "typescript",
+    "slack"
+  ],
+  "tags": [
+    "web"
+  ],
+  "feedback": "https://github.com/7tsuno/hands-on-mcp/issues",
+  "url": "hands-on-mcp"
+}

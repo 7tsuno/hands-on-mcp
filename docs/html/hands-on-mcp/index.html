@@ -1,0 +1,788 @@
+
+<!doctype html>
+
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+  <meta name="theme-color" content="#4F7DC9">
+  <meta charset="UTF-8">
+  <title>MCP Server ハンズオン</title>
+  <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+  <link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+  <style>
+    .success {
+      color: #1e8e3e;
+    }
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+  <google-codelab codelab-gaid=""
+                  id="hands-on-mcp"
+                  title="MCP Server ハンズオン"
+                  environment="web"
+                  feedback-link="https://github.com/7tsuno/hands-on-mcp/issues">
+    
+      <google-codelab-step label="はじめに" duration="2">
+        <h2 is-upgraded>🎯 このハンズオンについて</h2>
+<p>Model Context Protocol (MCP) サーバーを初めて作る方のためのハンズオンです。 TypeScript を使って、実際に動作する MCP サーバーを一から構築していきます。</p>
+<h2 is-upgraded>📚 学習内容</h2>
+<p>このハンズオンは 2 つのステップで構成されています：</p>
+<p><strong>Step 1: 基本編 - ラーメン推薦サーバー</strong></p>
+<ul>
+<li>MCP サーバーの基本構造を理解</li>
+<li>ツール（Tool）の実装方法を学習</li>
+<li>Claude Code との連携を体験</li>
+</ul>
+<p><strong>Step 2: 応用編 - Slack 連携サーバー</strong></p>
+<ul>
+<li>外部 API との連携方法を習得</li>
+<li>環境変数を使った設定管理</li>
+<li>複数ツールの実装パターン</li>
+</ul>
+<h2 is-upgraded>📋 前提条件</h2>
+<ul>
+<li><strong>Node.js 20</strong> 以上</li>
+<li><strong>TypeScript</strong> の基本知識</li>
+<li><strong>MCP</strong> についての基礎理解</li>
+</ul>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="プロジェクトのセットアップ" duration="3">
+        <h2 is-upgraded>リポジトリのクローン</h2>
+<p>まずはプロジェクトをローカルに準備します。</p>
+<pre><code language="language-bash" class="language-bash"># リポジトリのクローン
+git clone https://github.com/7tsuno/hands-on-mcp.git
+cd hands-on-mcp
+</code></pre>
+<h2 is-upgraded>依存関係のインストール</h2>
+<pre><code language="language-bash" class="language-bash"># Node.js の確認（20以上が必要）
+node --version
+
+# 依存関係のインストール
+npm install
+</code></pre>
+<h2 is-upgraded>プロジェクト構成</h2>
+<pre><code>hands-on-mcp/
+├── src/
+│   ├── index.ts             # 実装するファイル
+│   └── solutions/           # 解答例
+│       ├── step1/
+│       └── step2/
+├── docs/                    # ドキュメント
+└── package.json
+</code></pre>
+<h2 is-upgraded>💡 詰まったら</h2>
+<p>実装に詰まった時は <code>src/solutions/</code> 配下に解答例があるので参考にしてください。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Step 1: ラーメン推薦サーバーの概要" duration="2">
+        <h2 is-upgraded>🍜 Step 1 で作るもの</h2>
+<p>最初のステップでは、シンプルな MCP サーバーを作成します。</p>
+<p><strong>指定した味（しょうゆ／みそ／しお）に応じて、おすすめのラーメン屋を返すツール</strong></p>
+<h2 is-upgraded>🎯 Step 1 の学習目標</h2>
+<ul>
+<li>MCP サーバーの基本的な構造を理解する</li>
+<li><code>registerTool</code> メソッドでツールを登録する方法を学ぶ</li>
+<li>zod を使った引数のスキーマ定義を習得する</li>
+<li>Claude Code との基本的な連携方法を体験する</li>
+</ul>
+<h2 is-upgraded>💻 動作イメージ</h2>
+<p>ユーザーが Claude Code で「おすすめの醤油ラーメンを教えて」と入力すると、 MCP サーバーのツールが呼び出され、「ほん田（東京・秋葉原）」という回答が返ってきます。</p>
+<h2 is-upgraded>📝 実装の流れ</h2>
+<ol type="1">
+<li>必要なライブラリのインポート</li>
+<li>MCP サーバーの初期化</li>
+<li>ラーメン推薦ツールの実装</li>
+<li>サーバーの起動処理</li>
+<li>動作確認と Claude Code 連携</li>
+</ol>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Step 1: ライブラリのインポートと初期化" duration="3">
+        <h2 is-upgraded>📁 作業ファイル</h2>
+<p><code>src/index.ts</code> を編集して MCP サーバーを実装していきます。</p>
+<h2 is-upgraded>必要なライブラリをインポート</h2>
+<p><code>src/index.ts</code> に以下のコードを記述します：</p>
+<pre><code language="language-typescript" class="language-typescript">import { McpServer } from &#34;@modelcontextprotocol/sdk/server/mcp.js&#34;;
+import { StdioServerTransport } from &#34;@modelcontextprotocol/sdk/server/stdio.js&#34;;
+import { z } from &#34;zod&#34;;
+</code></pre>
+<h2 is-upgraded>ライブラリの説明</h2>
+<p><strong><code>McpServer</code></strong></p>
+<ul>
+<li>MCP サーバーの本体クラス</li>
+<li>ツールの登録やクライアントとの通信を管理</li>
+</ul>
+<p><strong><code>StdioServerTransport</code></strong></p>
+<ul>
+<li>標準入出力（stdin/stdout）で通信するためのトランスポート</li>
+<li>JSON-RPC メッセージのやり取りを処理</li>
+</ul>
+<p><strong><code>zod</code></strong></p>
+<ul>
+<li>引数のスキーマを定義するためのライブラリ</li>
+<li>型安全性を保証し、バリデーションも自動で行う</li>
+</ul>
+<h2 is-upgraded>サーバーインスタンスの作成</h2>
+<p>続けて、MCP サーバーのインスタンスを作成します：</p>
+<pre><code language="language-typescript" class="language-typescript">const server = new McpServer({
+  name: &#34;step1&#34;,
+  version: &#34;1.0.0&#34;,
+});
+</code></pre>
+<p>💡 <strong>ポイント</strong>:</p>
+<ul>
+<li><code>name</code> はサーバーの識別名（Claude Code で表示される）</li>
+<li><code>version</code> は互換性管理のために重要</li>
+</ul>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Step 1: ラーメン推薦ツールの実装" duration="5">
+        <h2 is-upgraded>ツールの登録</h2>
+<p><code>registerTool</code> メソッドを使ってツールを登録します：</p>
+<pre><code language="language-typescript" class="language-typescript">server.registerTool(
+  &#34;get-ramen-recommendation&#34;,
+  {
+    title: &#34;ラーメン屋おすすめ&#34;,
+    description: &#34;指定された味に応じたおすすめのラーメン屋を返します&#34;,
+    inputSchema: {
+      flavor: z
+        .enum([&#34;しょうゆ&#34;, &#34;みそ&#34;, &#34;しお&#34;])
+        .describe(&#34;ラーメンの味の種類&#34;),
+    },
+  },
+  async ({ flavor }) =&gt; {
+    const recommendations: Record&lt;string, string&gt; = {
+      しょうゆ: &#34;ほん田（東京・秋葉原）&#34;,
+      みそ: &#34;味噌っ子 ふっく（東京・荻窪）&#34;,
+      しお: &#34;Ramen FeeL (東京・青梅)&#34;,
+    };
+
+    const name = recommendations[flavor];
+
+    return {
+      content: [
+        {
+          type: &#34;text&#34;,
+          text: `${flavor}ラーメンなら「${name}」がおすすめです！`,
+        },
+      ],
+    };
+  }
+);
+</code></pre>
+<h2 is-upgraded>ツール定義のポイント</h2>
+<p><strong>1. ツール名（第 1 引数）</strong></p>
+<ul>
+<li><code>"get-ramen-recommendation"</code> - ユニークな識別子</li>
+</ul>
+<p><strong>2. メタデータ（第 2 引数）</strong></p>
+<ul>
+<li><code>title</code>: UI に表示される名前</li>
+<li><code>description</code>: AI がツール選択時に参照</li>
+<li><code>inputSchema</code>: zod で引数を定義</li>
+</ul>
+<p><strong>3. ハンドラー（第 3 引数）</strong></p>
+<ul>
+<li>非同期関数でツールの処理を実装</li>
+<li>引数は inputSchema で定義した型が渡される</li>
+<li>戻り値は <code>content</code> 配列で返す</li>
+</ul>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Step 1: サーバーの起動処理" duration="3">
+        <h2 is-upgraded>起動処理の実装</h2>
+<p>最後に、サーバーの起動処理を実装します：</p>
+<pre><code language="language-typescript" class="language-typescript">async function main() {
+  const transport = new StdioServerTransport();
+  await server.connect(transport);
+  console.error(&#34;🍜 ramen-server running via stdio&#34;);
+}
+
+main().catch((err) =&gt; {
+  console.error(&#34;Fatal error:&#34;, err);
+  process.exit(1);
+});
+</code></pre>
+<h2 is-upgraded>重要な注意事項</h2>
+<p>⚠️ <strong>console.log は使用禁止！</strong></p>
+<p>MCP サーバーは標準出力（stdout）を通信に使用するため：</p>
+<ul>
+<li>デバッグ出力は必ず <code>console.error()</code> を使用</li>
+<li><code>console.log()</code> を使うと通信が壊れてエラーになる</li>
+</ul>
+<h2 is-upgraded>コードの説明</h2>
+<ol type="1">
+<li><strong>トランスポートの作成</strong>: 標準入出力で通信するための設定</li>
+<li><strong>サーバーへの接続</strong>: トランスポートを使ってサーバーを起動</li>
+<li><strong>エラーハンドリング</strong>: 起動失敗時は適切に終了</li>
+</ol>
+<h2 is-upgraded>💾 ファイルを保存</h2>
+<p>ここまでの実装を保存してください。次のステップで動作確認を行います。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Step 1: 動作確認（REPL）" duration="4">
+        <h2 is-upgraded>REPL での動作テスト</h2>
+<p>実装したサーバーが正しく動作するか、REPL（対話モード）で確認します。</p>
+<h2 is-upgraded>サーバーの起動</h2>
+<p>ターミナルで以下のコマンドを実行：</p>
+<pre><code language="language-bash" class="language-bash">npm run dev
+</code></pre>
+<p>以下のようなメッセージが表示されれば起動成功です：</p>
+<pre><code>🍜 ramen-server running via stdio
+</code></pre>
+<h2 is-upgraded>ツール一覧の確認</h2>
+<p>別のターミナルは開かず、<strong>同じターミナルに</strong>以下の JSON を貼り付けて Enter：</p>
+<pre><code>{ &#34;jsonrpc&#34;: &#34;2.0&#34;, &#34;id&#34;: 1, &#34;method&#34;: &#34;tools/list&#34;, &#34;params&#34;: {} }
+</code></pre>
+<p>正常な応答例：</p>
+<pre><code language="language-json" class="language-json">{
+  &#34;jsonrpc&#34;: &#34;2.0&#34;,
+  &#34;id&#34;: 1,
+  &#34;result&#34;: {
+    &#34;tools&#34;: [
+      {
+        &#34;name&#34;: &#34;get-ramen-recommendation&#34;,
+        &#34;title&#34;: &#34;ラーメン屋おすすめ&#34;,
+        &#34;description&#34;: &#34;指定された味に応じたおすすめのラーメン屋を返します&#34;
+      }
+    ]
+  }
+}
+</code></pre>
+<h2 is-upgraded>ツールの実行テスト</h2>
+<p>続けて、ラーメン推薦ツールを呼び出してみます：</p>
+<pre><code>{&#34;jsonrpc&#34;: &#34;2.0&#34;,&#34;id&#34;: 2,&#34;method&#34;: &#34;tools/call&#34;,&#34;params&#34;: {&#34;name&#34;: &#34;get-ramen-recommendation&#34;, &#34;arguments&#34;: { &#34;flavor&#34;: &#34;しょうゆ&#34; }}}
+</code></pre>
+<p>期待される応答：</p>
+<pre><code language="language-json" class="language-json">{
+  &#34;jsonrpc&#34;: &#34;2.0&#34;,
+  &#34;id&#34;: 2,
+  &#34;result&#34;: {
+    &#34;content&#34;: [
+      {
+        &#34;type&#34;: &#34;text&#34;,
+        &#34;text&#34;: &#34;しょうゆラーメンなら「ほん田（東京・秋葉原）」がおすすめです！&#34;
+      }
+    ]
+  }
+}
+</code></pre>
+<h2 is-upgraded>終了方法</h2>
+<p>テストが完了したら <code>Ctrl + C</code> でサーバーを停止します。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Step 1: Claude Code への登録" duration="4">
+        <h2 is-upgraded>ビルド</h2>
+<p>TypeScript をコンパイルして実行可能ファイルを生成します：</p>
+<pre><code language="language-bash" class="language-bash">npm run build
+</code></pre>
+<p>ビルドが成功すると <code>dist/index.js</code> が生成されます。</p>
+<h2 is-upgraded>実行ファイルのパスを取得</h2>
+<p>以下のコマンドで実行ファイルのフルパスを取得：</p>
+<pre><code language="language-bash" class="language-bash">npm run path
+</code></pre>
+<p>出力例：</p>
+<pre><code>/Users/username/Projects/hands-on-mcp/dist/index.js
+</code></pre>
+<p>このパスをコピーしておきます。</p>
+<h2 is-upgraded>Claude Code に登録</h2>
+<p>取得したパスを使って MCP サーバーを登録：</p>
+<pre><code language="language-bash" class="language-bash">claude mcp add step1 -s project {コピーしたパス}
+</code></pre>
+<p>実際のコマンド例：</p>
+<pre><code language="language-bash" class="language-bash">claude mcp add step1 -s project /Users/username/Projects/hands-on-mcp/dist/index.js
+</code></pre>
+<h2 is-upgraded>登録の確認</h2>
+<p>プロジェクトルートに <code>.mcp.json</code> が作成されます：</p>
+<pre><code language="language-bash" class="language-bash">cat .mcp.json
+</code></pre>
+<h2 is-upgraded>⚠️ 注意事項</h2>
+<ul>
+<li>パスは<strong>フルパス</strong>で指定する必要があります</li>
+</ul>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Step 1: Claude Code での動作確認" duration="3">
+        <h2 is-upgraded>Claude Code の再起動</h2>
+<p>MCP サーバーを登録したら、Claude Code を再起動します：</p>
+<ol type="1">
+<li>Claude Code を完全に終了</li>
+<li>再度 Claude Code を起動</li>
+<li>プロジェクトを開く</li>
+</ol>
+<h2 is-upgraded>動作テスト</h2>
+<p>Claude Code のチャットに以下を入力：</p>
+<pre><code>おすすめの醤油ラーメンのお店を教えて
+</code></pre>
+<p>期待される応答：</p>
+<p>しょうゆラーメンなら「ほん田（東京・秋葉原）」がおすすめです！</p>
+<h2 is-upgraded>他の味も試してみる</h2>
+<pre><code>味噌ラーメンでおすすめは？
+</code></pre>
+<pre><code>塩ラーメンの美味しいお店を知りたい
+</code></pre>
+<h2 is-upgraded>MCP ツールの確認</h2>
+<p>Claude Code で <code>/mcp</code> コマンドを実行すると、登録されているツールの詳細を確認できます：</p>
+<ul>
+<li>ツール名</li>
+<li>説明</li>
+<li>引数のスキーマ</li>
+</ul>
+<h2 is-upgraded>🎉 Step 1 完了！</h2>
+<p>おめでとうございます！最初の MCP サーバーが完成しました。</p>
+<p>次は Step 2 で、より実践的な Slack 連携サーバーを作成します。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Step 2: Slack 連携サーバーの概要" duration="3">
+        <h2 is-upgraded>🔗 Step 2 で作るもの</h2>
+<p>Step 2 では、実用的な外部サービス連携を学びます。</p>
+<p><strong>Slack と連携して、スレッドの取得やメッセージ検索ができる MCP サーバー</strong></p>
+<h2 is-upgraded>🎯 実装する 3 つのツール</h2>
+<ol type="1">
+<li><strong>Slack スレッド取得</strong><ul>
+<li>URL から全ての返信を取得</li>
+<li>スレッドの内容を時系列で整理</li>
+</ul>
+</li>
+<li><strong>メッセージ検索</strong><ul>
+<li>キーワードでメッセージを検索</li>
+<li>検索結果を見やすく整形</li>
+</ul>
+</li>
+<li><strong>ユーザー情報取得</strong><ul>
+<li>ユーザー ID から詳細情報を取得</li>
+<li>プロフィール情報を構造化して返す</li>
+</ul>
+</li>
+</ol>
+<h2 is-upgraded>💡 実践的な使用例</h2>
+<ul>
+<li>Slack スレッドの内容を要約して GitHub Issue を作成</li>
+<li>特定の技術に詳しい人を Slack から探す</li>
+<li>過去の議論を検索して参照</li>
+</ul>
+<p>次のステップで Slack App の設定を行います。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Step 2: Slack App の設定" duration="5">
+        <h2 is-upgraded>Slack App の作成</h2>
+<ol type="1">
+<li><a href="https://api.slack.com/apps" target="_blank">Slack API</a> にアクセス</li>
+<li><strong>Create New App</strong> をクリック</li>
+<li><strong>From Scratch</strong> を選択</li>
+<li>アプリ名（例：MCP Hands-on）とワークスペースを設定</li>
+</ol>
+<h2 is-upgraded>OAuth スコープの設定</h2>
+<p>左メニューから <strong>OAuth &amp; Permissions</strong> を選択し、以下のスコープを追加：</p>
+<p><strong>User Token Scopes に追加するスコープ：</strong></p>
+<table>
+<tr><td colspan="1" rowspan="1"><p>スコープ</p>
+</td><td colspan="1" rowspan="1"><p>説明</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>channels:history</code></p>
+</td><td colspan="1" rowspan="1"><p>パブリックチャンネルのメッセージ読み取り</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>groups:history</code></p>
+</td><td colspan="1" rowspan="1"><p>プライベートチャンネルのメッセージ読み取り</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>im:history</code></p>
+</td><td colspan="1" rowspan="1"><p>DM のメッセージ読み取り</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>mpim:history</code></p>
+</td><td colspan="1" rowspan="1"><p>グループ DM のメッセージ読み取り</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>search:read</code></p>
+</td><td colspan="1" rowspan="1"><p>メッセージ検索</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>users:read</code></p>
+</td><td colspan="1" rowspan="1"><p>ユーザー情報の読み取り</p>
+</td></tr>
+</table>
+<h2 is-upgraded>アプリのインストール</h2>
+<ol type="1">
+<li><strong>Install to Workspace</strong> をクリック</li>
+<li>権限を確認して <strong>許可する</strong></li>
+<li><strong>User OAuth Token</strong> (xoxp-で始まる) をコピー</li>
+</ol>
+<h2 is-upgraded>🔐 トークンの保管</h2>
+<p>取得したトークンは安全に保管してください。 後で環境変数として使用します。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Step 2: 基本実装" duration="4">
+        <h2 is-upgraded>Step 1 のコードをベースに拡張</h2>
+<p>Step 1 のラーメンツールは削除します。 <code>src/index.ts</code> を編集して、空にした後、Step 2 の実装を始めます。</p>
+<h2 is-upgraded>ライブラリのインポート</h2>
+<pre><code language="language-typescript" class="language-typescript">import { McpServer } from &#34;@modelcontextprotocol/sdk/server/mcp.js&#34;;
+import { StdioServerTransport } from &#34;@modelcontextprotocol/sdk/server/stdio.js&#34;;
+import { z } from &#34;zod&#34;;
+import { WebClient } from &#34;@slack/web-api&#34;;
+</code></pre>
+<h2 is-upgraded>Slack クライアントの初期化</h2>
+<pre><code language="language-typescript" class="language-typescript">// Slack APIクライアントの初期化
+const slack = new WebClient(process.env.SLACK_USER_TOKEN);
+
+const server = new McpServer({
+  name: &#34;step2&#34;,
+  version: &#34;1.0.0&#34;,
+});
+</code></pre>
+<h2 is-upgraded>サーバー起動処理（環境変数チェック付き）</h2>
+<pre><code language="language-typescript" class="language-typescript">async function main() {
+  if (!process.env.SLACK_USER_TOKEN) {
+    console.error(&#34;エラー: SLACK_USER_TOKENが設定されていません&#34;);
+    process.exit(1);
+  }
+
+  const transport = new StdioServerTransport();
+  await server.connect(transport);
+  console.error(&#34;💬 slack-server running via stdio&#34;);
+}
+
+main().catch((err) =&gt; {
+  console.error(&#34;Fatal error:&#34;, err);
+  process.exit(1);
+});
+</code></pre>
+<h2 is-upgraded>環境変数の重要性</h2>
+<ul>
+<li>Slack トークンは環境変数で管理</li>
+<li>コードにハードコードしない（セキュリティ上重要）</li>
+<li><code>.mcp.json</code> で環境変数を設定可能</li>
+</ul>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Step 2: スレッド取得ツールの実装" duration="5">
+        <h2 is-upgraded>スレッド URL の解析と取得</h2>
+<p>最初のツールとして、Slack スレッドの URL から会話を取得するツールを実装します：</p>
+<pre><code language="language-typescript" class="language-typescript">server.registerTool(
+  &#34;get-slack-thread&#34;,
+  {
+    title: &#34;Slackスレッド取得&#34;,
+    description: &#34;SlackスレッドのURLから全ての返信を取得します&#34;,
+    inputSchema: {
+      thread_url: z.string().describe(&#34;SlackスレッドのURL&#34;),
+    },
+  },
+  async ({ thread_url }) =&gt; {
+    // URLからチャンネルIDとタイムスタンプを抽出
+    const urlParts = thread_url.match(
+      /https:\/\/[^\/]+\.slack\.com\/archives\/([^\/]+)\/p(\d+)(\d{6})?/
+    );
+
+    if (!urlParts) {
+      throw new Error(&#34;無効なSlackスレッドURLです&#34;);
+    }
+
+    const channelId = urlParts[1];
+    const timestamp = `${urlParts[2].slice(0, 10)}.${urlParts[2].slice(10)}`;
+
+    // Slack APIでスレッドの返信を取得
+    const result = await slack.conversations.replies({
+      channel: channelId,
+      ts: timestamp,
+    });
+
+    return {
+      content: [
+        {
+          type: &#34;text&#34;,
+          text: JSON.stringify(
+            {
+              channel: channelId,
+              thread_ts: timestamp,
+              messages: result.messages,
+              total_messages: result.messages?.length || 0,
+            },
+            null,
+            2
+          ),
+        },
+      ],
+    };
+  }
+);
+</code></pre>
+<h2 is-upgraded>実装のポイント</h2>
+<p><strong>URL パース</strong></p>
+<ul>
+<li>正規表現で Slack URL からチャンネル ID とタイムスタンプを抽出</li>
+<li>URL 形式: <code>https://xxx.slack.com/archives/C1234567890/p1234567890123456</code></li>
+</ul>
+<p><strong>タイムスタンプ変換</strong></p>
+<ul>
+<li>URL の <code>p1234567890123456</code> → API の <code>1234567890.123456</code></li>
+</ul>
+<p><strong>エラーハンドリング</strong></p>
+<ul>
+<li>無効な URL、権限エラー、スレッド不在を適切に処理</li>
+</ul>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Step 2: 検索とユーザー情報ツールの実装" duration="5">
+        <h2 is-upgraded>メッセージ検索ツール</h2>
+<p>2 つ目のツールとして、メッセージ検索機能を実装：</p>
+<pre><code language="language-typescript" class="language-typescript">sserver.registerTool(
+  &#34;search-slack-messages&#34;,
+  {
+    title: &#34;Slackメッセージ検索&#34;,
+    description: &#34;Slackメッセージを検索して結果を取得します&#34;,
+    inputSchema: {
+      query: z.string().describe(&#34;検索クエリ&#34;),
+      limit: z.number().optional().default(20).describe(&#34;取得する最大件数&#34;),
+    },
+  },
+  async ({ query, limit }) =&gt; {
+    // Slack APIでメッセージを検索
+    const result = await slack.search.messages({
+      query: query,
+      count: limit,
+    });
+
+    return {
+      content: [
+        {
+          type: &#34;text&#34;,
+          text: JSON.stringify(
+            {
+              query: query,
+              messages: result.messages?.matches || [],
+              total_results: result.messages?.total || 0,
+            },
+            null,
+            2
+          ),
+        },
+      ],
+    };
+  }
+);
+</code></pre>
+<h2 is-upgraded>ユーザー情報取得ツール</h2>
+<p>3 つ目のツールとして、ユーザー情報取得機能を実装：</p>
+<pre><code language="language-typescript" class="language-typescript">server.registerTool(
+  &#34;get-slack-user&#34;,
+  {
+    title: &#34;Slackユーザー情報取得&#34;,
+    description: &#34;SlackユーザーIDから詳細なユーザー情報を取得します&#34;,
+    inputSchema: {
+      user_id: z.string().describe(&#34;SlackユーザーID（例: U1234567890）&#34;),
+    },
+  },
+  async ({ user_id }) =&gt; {
+    try {
+      // Slack APIでユーザー情報を取得
+      const result = await slack.users.info({
+        user: user_id,
+      });
+
+      if (!result.user) {
+        throw new Error(&#34;ユーザーが見つかりませんでした&#34;);
+      }
+
+      const user = result.user;
+
+      return {
+        content: [
+          {
+            type: &#34;text&#34;,
+            text: JSON.stringify(
+              {
+                id: user.id,
+                name: user.name,
+                real_name: user.real_name,
+                display_name: user.profile?.display_name || user.name,
+                email: user.profile?.email,
+                title: user.profile?.title,
+                status_text: user.profile?.status_text,
+                status_emoji: user.profile?.status_emoji,
+                is_bot: user.is_bot,
+                is_admin: user.is_admin,
+                is_owner: user.is_owner,
+                avatar_url: user.profile?.image_512 || user.profile?.image_192,
+                timezone: user.tz,
+              },
+              null,
+              2
+            ),
+          },
+        ],
+      };
+    } catch (error: any) {
+      throw new Error(`ユーザー情報の取得に失敗しました: ${error.message}`);
+    }
+  }
+);
+</code></pre>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Step 2: 動作確認と Claude Code 連携" duration="4">
+        <h2 is-upgraded>REPL での動作確認</h2>
+<p>環境変数を設定してサーバーを起動：</p>
+<pre><code language="language-bash" class="language-bash">SLACK_USER_TOKEN=&#34;xoxp-your-token&#34; npm run dev
+</code></pre>
+<p>ツール一覧の確認：</p>
+<pre><code language="language-json" class="language-json">{ &#34;jsonrpc&#34;: &#34;2.0&#34;, &#34;id&#34;: 1, &#34;method&#34;: &#34;tools/list&#34;, &#34;params&#34;: {} }
+</code></pre>
+<h2 is-upgraded>ビルドと Claude Code への登録</h2>
+<pre><code language="language-bash" class="language-bash"># ビルド
+npm run build
+
+# パスを取得
+npm run path
+
+# 環境変数付きで登録
+claude mcp add step2 -s project {パス} \
+  -e SLACK_USER_TOKEN=&#34;xoxp-your-token&#34;
+</code></pre>
+<h2 is-upgraded>実践的な使い方</h2>
+<p>Claude Code で以下のような使い方ができます：</p>
+<p><strong>スレッドの要約：</strong></p>
+<pre><code>このSlackスレッドの内容を要約して、議論されている課題についてGitHub Issueを作成して：
+https://example.slack.com/archives/C1234567890/p1234567890123456
+</code></pre>
+<p><strong>特定の話題に詳しい人を探す：</strong></p>
+<pre><code>MCPについて詳しく知りたい。Slackで検索してMCPについてよく言及している人を探して
+</code></pre>
+<p><strong>バグレポートの調査：</strong></p>
+<pre><code>Slackで「エラー」「バグ」「不具合」を検索して、最近報告されている問題をまとめて
+</code></pre>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="トラブルシューティング" duration="3">
+        <h2 is-upgraded>よくあるエラーと対処法</h2>
+<table>
+<tr><td colspan="1" rowspan="1"><p>エラー</p>
+</td><td colspan="1" rowspan="1"><p>原因</p>
+</td><td colspan="1" rowspan="1"><p>解決方法</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>console.log</code> で通信エラー</p>
+</td><td colspan="1" rowspan="1"><p>標準出力の競合</p>
+</td><td colspan="1" rowspan="1"><p><code>console.error</code> を使用</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>not_in_channel</code></p>
+</td><td colspan="1" rowspan="1"><p>チャンネル未参加</p>
+</td><td colspan="1" rowspan="1"><p>トークンのユーザーがチャンネルに参加</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>missing_scope</code></p>
+</td><td colspan="1" rowspan="1"><p>権限不足</p>
+</td><td colspan="1" rowspan="1"><p>Slack App で必要なスコープを追加</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>invalid_auth</code></p>
+</td><td colspan="1" rowspan="1"><p>トークン無効</p>
+</td><td colspan="1" rowspan="1"><p>トークンを再生成して環境変数を更新</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>channel_not_found</code></p>
+</td><td colspan="1" rowspan="1"><p>チャンネル ID 間違い</p>
+</td><td colspan="1" rowspan="1"><p>URL が正しいか確認</p>
+</td></tr>
+</table>
+<h2 is-upgraded>デバッグのコツ</h2>
+<p><strong>1. REPL でテスト</strong></p>
+<ul>
+<li>環境変数を設定して <code>npm run dev</code></li>
+<li>JSON-RPC を直接送信して動作確認</li>
+</ul>
+<p><strong>2. エラーログの活用</strong></p>
+<pre><code language="language-typescript" class="language-typescript">console.error(&#34;Debug:&#34;, { channel, timestamp });
+</code></pre>
+<p><strong>3. Slack API のレート制限</strong></p>
+<ul>
+<li>大量のリクエストは避ける</li>
+<li>エラー時は少し待ってリトライ</li>
+</ul>
+<h2 is-upgraded>📁 解答例の確認</h2>
+<p>どうしても詰まった場合：</p>
+<pre><code language="language-bash" class="language-bash"># Step 1 の解答
+cat src/solutions/step1/index.ts
+
+# Step 2 の解答
+cat src/solutions/step2/index.ts
+</code></pre>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="まとめ" duration="3">
+        <h2 is-upgraded>🎉 完成！</h2>
+<p>おめでとうございます！2 つの MCP サーバーを完成させました。</p>
+<h2 is-upgraded>📚 学んだこと</h2>
+<p><strong>Step 1: 基本編</strong></p>
+<ul>
+<li>✅ MCP サーバーの基本構造（McpServer + Transport）</li>
+<li>✅ ツールの登録と実装（registerTool）</li>
+<li>✅ zod によるスキーマ定義</li>
+<li>✅ Claude Code との基本的な連携</li>
+</ul>
+<p><strong>Step 2: 応用編</strong></p>
+<ul>
+<li>✅ 外部 API との連携（Slack Web API）</li>
+<li>✅ 環境変数の管理（process.env）</li>
+<li>✅ 複数ツールの実装パターン</li>
+<li>✅ エラーハンドリングのベストプラクティス</li>
+</ul>
+<h2 is-upgraded>🚀 次のステップ</h2>
+<p>学んだ知識を活かして、以下に挑戦してみましょう：</p>
+<ul>
+<li><strong>GitHub API</strong> と連携して Issue/PR を操作</li>
+<li><strong>データベース</strong>と接続してデータを管理</li>
+<li><strong>ファイルシステム</strong>を操作するツール</li>
+<li><strong>Web スクレイピング</strong>ツール</li>
+</ul>
+<h2 is-upgraded>📚 参考リソース</h2>
+<ul>
+<li><a href="https://modelcontextprotocol.io/" target="_blank">MCP 公式ドキュメント</a></li>
+<li><a href="https://docs.anthropic.com/claude-code" target="_blank">Claude Code ドキュメント</a></li>
+<li><a href="https://api.slack.com/" target="_blank">Slack API ドキュメント</a></li>
+<li><a href="https://zod.dev/" target="_blank">zod ドキュメント</a></li>
+</ul>
+<p><strong>Happy Coding! 🎊</strong></p>
+
+
+      </google-codelab-step>
+    
+  </google-codelab>
+
+  <script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+  <script src="//support.google.com/inapp/api.js"></script>
+
+</body>
+</html>
