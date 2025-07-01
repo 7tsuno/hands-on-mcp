@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
@@ -93,6 +92,60 @@ server.registerTool(
         },
       ],
     };
+  }
+);
+
+server.registerTool(
+  "get-slack-user",
+  {
+    title: "Slackユーザー情報取得",
+    description: "SlackユーザーIDから詳細なユーザー情報を取得します",
+    inputSchema: {
+      user_id: z.string().describe("SlackユーザーID（例: U1234567890）"),
+    },
+  },
+  async ({ user_id }) => {
+    try {
+      // Slack APIでユーザー情報を取得
+      const result = await slack.users.info({
+        user: user_id,
+      });
+
+      if (!result.user) {
+        throw new Error("ユーザーが見つかりませんでした");
+      }
+
+      const user = result.user;
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(
+              {
+                id: user.id,
+                name: user.name,
+                real_name: user.real_name,
+                display_name: user.profile?.display_name || user.name,
+                email: user.profile?.email,
+                title: user.profile?.title,
+                status_text: user.profile?.status_text,
+                status_emoji: user.profile?.status_emoji,
+                is_bot: user.is_bot,
+                is_admin: user.is_admin,
+                is_owner: user.is_owner,
+                avatar_url: user.profile?.image_512 || user.profile?.image_192,
+                timezone: user.tz,
+              },
+              null,
+              2
+            ),
+          },
+        ],
+      };
+    } catch (error: any) {
+      throw new Error(`ユーザー情報の取得に失敗しました: ${error.message}`);
+    }
   }
 );
 

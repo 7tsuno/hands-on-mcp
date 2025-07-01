@@ -14,10 +14,11 @@
 
 > **Slack と連携して、スレッドの取得やメッセージ検索ができるツール**
 
-2 つのツールを実装します：
+3 つのツールを実装します：
 
 1. Slack スレッドの URL から全ての返信を取得
 2. Slack メッセージを検索
+3. Slack ユーザー ID からユーザー情報を取得
 
 ---
 
@@ -54,6 +55,7 @@ npm install @slack/web-api
    - `im:history` - ダイレクトメッセージの履歴を読み取り
    - `mpim:history` - グループダイレクトメッセージの履歴を読み取り
    - `search:read` - Slack 内での検索権限
+   - `users:read` - ユーザー情報の読み取り
 
 ##### アプリのインストール
 
@@ -206,7 +208,67 @@ server.registerTool(
 
 ---
 
-#### ⑤ サーバーの起動処理を実装する
+#### ⑤ ユーザー情報取得ツールを登録する
+
+```typescript
+server.registerTool(
+  "get-slack-user",
+  {
+    title: "Slackユーザー情報取得",
+    description: "SlackユーザーIDから詳細なユーザー情報を取得します",
+    inputSchema: {
+      user_id: z.string().describe("SlackユーザーID（例: U1234567890）"),
+    },
+  },
+  async ({ user_id }) => {
+    try {
+      // Slack APIでユーザー情報を取得
+      const result = await slack.users.info({
+        user: user_id,
+      });
+
+      if (!result.user) {
+        throw new Error("ユーザーが見つかりませんでした");
+      }
+
+      const user = result.user;
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(
+              {
+                id: user.id,
+                name: user.name,
+                real_name: user.real_name,
+                display_name: user.profile?.display_name || user.name,
+                email: user.profile?.email,
+                title: user.profile?.title,
+                status_text: user.profile?.status_text,
+                status_emoji: user.profile?.status_emoji,
+                is_bot: user.is_bot,
+                is_admin: user.is_admin,
+                is_owner: user.is_owner,
+                avatar_url: user.profile?.image_512 || user.profile?.image_192,
+                timezone: user.tz,
+              },
+              null,
+              2
+            ),
+          },
+        ],
+      };
+    } catch (error) {
+      throw new Error(`ユーザー情報の取得に失敗しました: ${error.message}`);
+    }
+  }
+);
+```
+
+---
+
+#### ⑥ サーバーの起動処理を実装する
 
 ```typescript
 async function main() {
@@ -293,6 +355,12 @@ Slackで同じようなエラーについて話している人がいないか検
 解決方法が議論されていたら教えて
 ```
 
+**🔍 特定の話題に詳しい人を探す**
+
+```
+phenylについて詳しく知りたい。Slackで検索してphenylについてよく言及している人を探して
+```
+
 ---
 
 ### 🚨 トラブルシューティング
@@ -312,7 +380,6 @@ Slackで同じようなエラーについて話している人がいないか検
 | 外部 API 連携    | Slack Web API を使った実装         |
 | 環境変数の活用   | トークンなどの機密情報の管理       |
 | 複数ツールの実装 | 1 つのサーバーに複数のツールを登録 |
-| URL 解析         | 正規表現を使ったパラメータ抽出     |
 
 ---
 
