@@ -716,7 +716,8 @@ server.registerTool(
   "get-slack-user",
   {
     title: "Slackユーザー情報取得",
-    description: "SlackユーザーIDから詳細なユーザー情報を取得します",
+    description:
+      "SlackユーザーIDから詳細なユーザー情報を取得します。他のツールでユーザーIDを取得したがユーザー名がわからない場合などに使用します。",
     inputSchema: {
       user_id: z.string().describe("SlackユーザーID（例: U1234567890）"),
     },
@@ -812,6 +813,10 @@ SLACK_USER_TOKEN="xoxp-your-token" npm run dev
 ### ビルドと Claude Code への登録
 
 ```bash
+
+# Step1 の MCP を消しておく
+claude mcp remove step1
+
 # ビルド
 npm run build
 
@@ -819,9 +824,21 @@ npm run build
 npm run path
 
 # 環境変数付きで登録
-claude mcp add step2 -s project {パス} \
-  -e SLACK_USER_TOKEN="xoxp-your-token"
+claude mcp add step2 -s project {パス} -e SLACK_USER_TOKEN="xoxp-your-token"
 ```
+
+### 動作テスト
+
+Claude Code のチャットに以下を入力：
+
+```
+https://example.slack.com/archives/C1234567890/p1234567890123456 (任意のSlackスレッドのURL)
+のスレッドで話されている内容を誰がどんなことを言っていたかなどを含めて要約して
+```
+
+期待される応答：
+
+> しょうゆラーメンなら「ほん田（東京・秋葉原）」がおすすめです！
 
 ### 実践的な使い方
 
