@@ -437,11 +437,7 @@ Duration: 0:03:00
 
 ### Claude Code の再起動
 
-MCP サーバーを登録したら、Claude Code を再起動します：
-
-1. Claude Code を完全に終了
-2. 再度 Claude Code を起動
-3. プロジェクトを開く
+MCP サーバーを登録したら、Claude Code を起動します
 
 ### 動作テスト
 
@@ -522,7 +518,7 @@ Duration: 0:05:00
 1. [Slack API](https://api.slack.com/apps) にアクセス
 2. **Create New App** をクリック
 3. **From Scratch** を選択
-4. アプリ名（例：MCP Hands-on）とワークスペースを設定
+4. アプリ名（例：mcp-hands-on-{名前}）とワークスペースを設定
 
 ### OAuth スコープの設定
 
@@ -541,7 +537,7 @@ Duration: 0:05:00
 
 ### アプリのインストール
 
-1. **Install to Workspace** をクリック
+1. 上の方に戻り、**Install to {ワークスペース名}** をクリック
 2. 権限を確認して **許可する**
 3. **User OAuth Token** (xoxp-で始まる) をコピー
 
@@ -584,31 +580,10 @@ const server = new McpServer({
 });
 ```
 
-### サーバー起動処理（環境変数チェック付き）
-
-```typescript
-async function main() {
-  if (!process.env.SLACK_USER_TOKEN) {
-    console.error("エラー: SLACK_USER_TOKENが設定されていません");
-    process.exit(1);
-  }
-
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
-  console.error("💬 slack-server running via stdio");
-}
-
-main().catch((err) => {
-  console.error("Fatal error:", err);
-  process.exit(1);
-});
-```
-
 ### 環境変数の重要性
 
 - Slack トークンは環境変数で管理
 - コードにハードコードしない（セキュリティ上重要）
-- `.mcp.json` で環境変数を設定可能
 
 ## Step 2: スレッド取得ツールの実装
 
@@ -692,7 +667,7 @@ Duration: 0:05:00
 2 つ目のツールとして、メッセージ検索機能を実装：
 
 ```typescript
-sserver.registerTool(
+server.registerTool(
   "search-slack-messages",
   {
     title: "Slackメッセージ検索",
@@ -767,6 +742,26 @@ server.registerTool(
     }
   }
 );
+```
+
+## Step 2: サーバー起動処理
+
+```typescript
+async function main() {
+  if (!process.env.SLACK_USER_TOKEN) {
+    console.error("エラー: SLACK_USER_TOKENが設定されていません");
+    process.exit(1);
+  }
+
+  const transport = new StdioServerTransport();
+  await server.connect(transport);
+  console.error("💬 slack-server running via stdio");
+}
+
+main().catch((err) => {
+  console.error("Fatal error:", err);
+  process.exit(1);
+});
 ```
 
 ## Step 2: 動作確認と Claude Code 連携
