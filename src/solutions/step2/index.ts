@@ -115,31 +115,11 @@ server.registerTool(
         throw new Error("ユーザーが見つかりませんでした");
       }
 
-      const user = result.user;
-
       return {
         content: [
           {
             type: "text",
-            text: JSON.stringify(
-              {
-                id: user.id,
-                name: user.name,
-                real_name: user.real_name,
-                display_name: user.profile?.display_name || user.name,
-                email: user.profile?.email,
-                title: user.profile?.title,
-                status_text: user.profile?.status_text,
-                status_emoji: user.profile?.status_emoji,
-                is_bot: user.is_bot,
-                is_admin: user.is_admin,
-                is_owner: user.is_owner,
-                avatar_url: user.profile?.image_512 || user.profile?.image_192,
-                timezone: user.tz,
-              },
-              null,
-              2
-            ),
+            text: JSON.stringify(result.user, null, 2),
           },
         ],
       };
