@@ -81,7 +81,7 @@ hands-on-mcp/
 
 実装に詰まった時は `src/solutions/` 配下に解答例があるので参考にしてください。
 
-## Step 1: ラーメン推薦 MCP の概要
+## Step 1: おすすめラーメン紹介 MCP の概要
 
 Duration: 0:02:00
 
