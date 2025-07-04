@@ -280,8 +280,8 @@ JSON フォーマットを使ったシンプルなプロトコル。
 
 ```json
 {
-  "method": "add",
-  "params": [2, 3],
+  "method": "getWeather",
+  "params": { "city": "Tokyo" },
   "id": 1
 }
 ```
@@ -290,7 +290,7 @@ JSON フォーマットを使ったシンプルなプロトコル。
 
 ```json
 {
-  "result": 5,
+  "result": { "temperature": 30, "weather": "sunny" },
   "id": 1
 }
 ```
