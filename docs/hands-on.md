@@ -554,7 +554,7 @@ Duration: 0:05:00
 
 Duration: 0:04:00
 
-### Step 1 のコードをベースに拡張
+### Step2 のコードを新たに実装
 
 Step 1 のラーメンツールは削除します。
 `src/index.ts` を編集して、空にした後、Step 2 の実装を始めます。
@@ -744,7 +744,42 @@ server.registerTool(
 );
 ```
 
+### 実装のポイント
+
+**Tips**
+
+#### 📌 description の重要性
+
+MCP ツールの `description` は、AI がツールを選択・使用する際の重要な判断材料になります。
+具体的で詳細な説明を書くことで、AI がより適切にツールを活用できるようになります。
+
+#### 💡 Slack 検索の精度向上
+
+例えば、メッセージ検索ツールの description を以下のように改善することもできるかもしれません：
+
+**改善前：**
+
+```
+description: "Slackメッセージを検索して結果を取得します"
+```
+
+**改善後:**
+
+```
+description: `Slackメッセージを検索します。以下の検索オプションが利用可能:
+- 完全一致: "検索語句" (ダブルクォートで囲む)
+- ユーザー指定: from:@username
+- チャンネル指定: in:#channel-name
+- 日付指定: after:2024-01-01, before:2024-12-31
+- 組み合わせ: "エラー" from:@john in:#dev-team
+例: "デプロイエラー" from:@alice after:2024-06-01`
+```
+
 ## Step 2: サーバー起動処理
+
+### サーバ起動処理
+
+Step1 と同様にサーバ起動処理を実装：
 
 ```typescript
 async function main() {
